@@ -1,12 +1,27 @@
+# if running Source, run Source with echo
+# source("pollution_analysis.R", echo=TRUE)
+
 library(ggplot2)
+library(plyr)
 library(dplyr)
 
-# read data
-data_nei <- readRDS("summarySCC_PM25.rds")
-data_scc <- readRDS("Source_Classification_Code.rds")
-data_cities <- data.frame(fips = c("24510", "06037"), city = c("Baltimore", "Los Angeles"))
-data_all <- left_join(data_nei, data_scc, ) %>% left_join(data_cities)
-data_all$year = as.factor(data_all$year)
+url <- "https://d396qusza40orc.cloudfront.net/exdata%2Fdata%2FNEI_data.zip"
+filenames <- c("summarySCC_PM25.rds", "Source_Classification_Code.rds")
+cities <- data.frame(fips = c("24510", "06037"), city = c("Baltimore", "Los Angeles"))
+
+# download data, as needed
+if (!all(file.exists(filenames))) {
+    temp_file <- tempfile(fileext = ".zip")
+    download.file(url, temp_file)
+    unzip(temp_file, exdir = getwd())
+    unlink(temp_file)
+}
+
+# populate data, as needed
+if (!exists("data_all")){
+    data_all <- filenames %>% sapply(readRDS) %>% join_all() %>% left_join(cities)
+    data_all$year = as.factor(data_all$year) # factorize year to plot as discrete units
+}
 
 title <- "1. National Emissions"; x = "Year"; y = "PM2.5 Tons"
 data_all %>%
@@ -49,3 +64,5 @@ data_all %>%
     facet_wrap(~ city, scales = "free_y") +
     geom_col() +
     labs (title = title, x = x, y = y)
+
+# if you like my work, you can connect with me on http://linkedin.com/in/oeryani/ 😊
